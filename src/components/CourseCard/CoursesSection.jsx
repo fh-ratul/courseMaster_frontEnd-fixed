@@ -21,6 +21,21 @@ export default function CoursesSection() {
     const [category, setCategory] = useState("");
     const [tags, setTags] = useState("");
 
+    // values actually sent to the API: search applies on submit, text filters are debounced
+    const [appliedSearch, setAppliedSearch] = useState("");
+    const [debouncedCategory, setDebouncedCategory] = useState("");
+    const [debouncedTags, setDebouncedTags] = useState("");
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (category === debouncedCategory && tags === debouncedTags) return;
+            setDebouncedCategory(category);
+            setDebouncedTags(tags);
+            setPage(1);
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [category, tags, debouncedCategory, debouncedTags]);
+
     const fetchCourses = async () => {
         try {
             setLoading(true);
@@ -29,10 +44,10 @@ export default function CoursesSection() {
             const params = {
                 page,
                 limit,
-                search: search || undefined,
+                search: appliedSearch || undefined,
                 sort: sort || undefined,
-                category: category || undefined,
-                tags: tags || undefined,
+                category: debouncedCategory || undefined,
+                tags: debouncedTags || undefined,
             };
 
             const res = await getCourses(params);
@@ -48,25 +63,26 @@ export default function CoursesSection() {
     useEffect(() => {
         fetchCourses();
         // eslint-disable-next-line
-    }, [page, sort, category, tags]);
+    }, [page, sort, appliedSearch, debouncedCategory, debouncedTags]);
 
     const onSearchSubmit = (e) => {
         e.preventDefault();
+        setAppliedSearch(search.trim());
         setPage(1);
-        fetchCourses();
     };
 
-    // reset page when filters change
-    useEffect(() => {
+    // reset to first page in the same render as the sort change (avoids a second request)
+    const handleSortChange = (value) => {
+        setSort(value);
         setPage(1);
-    }, [sort, category, tags]);
+    };
 
     return (
         <div className="space-y-6">
 
             <CoursesFilters
                 search={search} setSearch={setSearch}
-                sort={sort} setSort={setSort}
+                sort={sort} setSort={handleSortChange}
                 category={category} setCategory={setCategory}
                 tags={tags} setTags={setTags}
                 onSearchSubmit={onSearchSubmit}
