@@ -8,13 +8,6 @@ export default function ProtectedRoute({ children }) {
   const token = getToken();
 
   useEffect(() => {
-    // Check if dev bypass is enabled for testing/grading protected routes
-    const isBypass = localStorage.getItem("dev_bypass") === "true" || window.location.search.includes("bypass=true");
-    if (isBypass) {
-      setIsValid(true);
-      return;
-    }
-
     if (!token) {
       setIsValid(false);
       return;
@@ -23,10 +16,7 @@ export default function ProtectedRoute({ children }) {
     // Verify token is valid
     getMe()
       .then(() => setIsValid(true))
-      .catch(() => {
-        // Fallback: if token exists but network/server check fails, still allow if token exists
-        setIsValid(!!token);
-      });
+      .catch(() => setIsValid(false));
   }, [token]);
 
   if (isValid === null) {
